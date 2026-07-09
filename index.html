@@ -2,102 +2,46 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VexFlow リズム譜サンプル</title>
-    <!-- VexFlowのCDNライブラリ -->
-    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f7f9fc;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        h1 {
-            color: #2c3e50;
-            font-size: 2rem;
-            margin-bottom: 30px;
-        }
-        #vexflow-container {
-            width: 100%;
-            max-width: 900px; /* 譜面の最大幅 */
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-    </style>
+    <title>VexFlow Canvas 動作確認</title>
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.3/build/cjs/vexflow.js"></script>
 </head>
 <body>
 
-    <h1>リズム譜 読み訓練</h1>
-
-    <!-- 楽譜を描画するコンテナ -->
-    <div id="vexflow-container"></div>
+    <div id="canvas-container"></div>
 
     <script>
-        // VexFlowの初期化
-        const { Factory, Accidental, Beam, Curve, Formatter, StaveNote, TextNote } = Vex.Flow;
+        // VexFlowの各クラスを読み込み
+        const { Renderer, Stave, StaveNote, Beam, Formatter } = Vex.Flow;
 
-        // 描画先のDOM要素を取得
-        const container = document.getElementById('vexflow-container');
-        
-        // Factoryインスタンスを作成 (描画オプションを設定)
-        const vf = new Factory({
-            renderer: { elementId: 'vexflow-container', width: 900, height: 250 }
-        });
+        // コンテナの取得
+        const container = document.getElementById('canvas-container');
 
-        const score = vf.EasyScore();
-        const system = vf.System();
+        // レンダラーをCanvasで初期化
+        const renderer = new Renderer(container, Renderer.Backends.CANVAS);
+        renderer.resize(500, 200);
+        const context = renderer.getContext();
 
-        // **譜面の描画開始**
+        // 楽譜の五線を作成
+        const stave = new Stave(25, 40, 400);
+        stave.addClef('treble').addTimeSignature('4/4');
+        stave.setContext(context).draw();
 
-        // 小節1: 4分音符x4
-        system.addStave({
-            voices: [
-                score.voice(score.notes('C4/q, G4/q, C4/q, G4/q', { stem: 'up' }))
-            ]
-        }).addClef('treble').addTimeSignature('4/4');
+        // 音符データ
+        const notes = [
+            new StaveNote({ keys: ['c/4'], duration: 'q' }),
+            new StaveNote({ keys: ['d/4'], duration: '8' }),
+            new StaveNote({ keys: ['e/4'], duration: '8' }),
+            new StaveNote({ keys: ['f/4'], duration: 'q' })
+        ];
 
-        // 小節2: 16分音符の連桁グループx4 (合計1拍)
-        const notesM2 = score.notes('C4/16, G4/16, C4/16, G4/16', { stem: 'up' });
-        const voiceM2 = score.voice(notesM2);
-        // 連桁を自動生成
-        const beamsM2 = Beam.generateBeams(notesM2);
-        
-        system.addStave({
-            voices: [voiceM2]
-        });
+        // 8分音符に連桁（ビーム）を適用
+        const beam = new Beam(notes.slice(1, 3));
 
-        // 小節3: 4分音符(タイ) + 4分休符
-        const noteTie1 = new StaveNote({ keys: ['G4/4'], duration: 'q', stem_direction: 1 });
-        const restQ = new StaveNote({ keys: ['C4/4'], duration: 'qr' });
-        
-        const notesM3 = [noteTie1, restQ];
-        const voiceM3 = score.voice(notesM3);
-        
-        const staveM3 = system.addStave({
-            voices: [voiceM3]
-        });
+        // 楽譜に配置して描画
+        Formatter.FormatAndDraw(context, stave, notes);
+        beam.setContext(context).draw();
 
-        // タイを作成
-        const tie = vf.Curve({
-            from: noteTie1,
-            to: noteTie1, // 同じ音符から同じ音符へタイ（これは休符へのタイのデモ）
-            options: {
-                cps: [{ x: 10, y: -10 }, { x: 40, y: -10 }]
-            }
-        });
-        
-        // 描画実行
-        vf.draw();
-        
-        // タイを手動で描画に追加
-        tie.setContext(vf.getContext()).draw();
-
+        console.log("Canvasへの描画が完了しました。");
     </script>
 </body>
 </html>
