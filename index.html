@@ -55,4 +55,49 @@
 
         // **譜面の描画開始**
 
-        // 小節1:
+        // 小節1: 4分音符x4
+        system.addStave({
+            voices: [
+                score.voice(score.notes('C4/q, G4/q, C4/q, G4/q', { stem: 'up' }))
+            ]
+        }).addClef('treble').addTimeSignature('4/4');
+
+        // 小節2: 16分音符の連桁グループx4 (合計1拍)
+        const notesM2 = score.notes('C4/16, G4/16, C4/16, G4/16', { stem: 'up' });
+        const voiceM2 = score.voice(notesM2);
+        // 連桁を自動生成
+        const beamsM2 = Beam.generateBeams(notesM2);
+        
+        system.addStave({
+            voices: [voiceM2]
+        });
+
+        // 小節3: 4分音符(タイ) + 4分休符
+        const noteTie1 = new StaveNote({ keys: ['G4/4'], duration: 'q', stem_direction: 1 });
+        const restQ = new StaveNote({ keys: ['C4/4'], duration: 'qr' });
+        
+        const notesM3 = [noteTie1, restQ];
+        const voiceM3 = score.voice(notesM3);
+        
+        const staveM3 = system.addStave({
+            voices: [voiceM3]
+        });
+
+        // タイを作成
+        const tie = vf.Curve({
+            from: noteTie1,
+            to: noteTie1, // 同じ音符から同じ音符へタイ（これは休符へのタイのデモ）
+            options: {
+                cps: [{ x: 10, y: -10 }, { x: 40, y: -10 }]
+            }
+        });
+        
+        // 描画実行
+        vf.draw();
+        
+        // タイを手動で描画に追加
+        tie.setContext(vf.getContext()).draw();
+
+    </script>
+</body>
+</html>
