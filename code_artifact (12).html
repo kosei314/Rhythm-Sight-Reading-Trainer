@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リズム譜読み訓練</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/vexflow.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+        <h1 class="text-2xl font-bold text-center">リズム譜読み訓練</h1>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 flex flex-col md:flex-row gap-6 mt-4">
+        
+        <!-- 左側：コントロールパネル -->
+        <div class="w-full md:w-1/3 bg-white p-6 rounded-xl shadow-md flex flex-col gap-6">
+            
+            <!-- 再生コントロール -->
+            <div>
+                <button id="play-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-xl transition-colors shadow" onclick="togglePlay()">
+                    ▶ 再生開始
+                </button>
+            </div>
+
+            <!-- 基本設定 -->
+            <div class="space-y-4 border-b pb-4">
+                <h2 class="font-bold text-lg text-slate-700 border-l-4 border-blue-500 pl-2">基本設定</h2>
+                
+                <div class="flex justify-between items-center">
+                    <label class="font-medium">拍子</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="timeSig" value="4/4" checked onchange="handleSettingChange()"> 4/4
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="timeSig" value="3/4" onchange="handleSettingChange()"> 3/4
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <label class="font-medium">テンポ (BPM)</label>
+                    <input type="range" id="tempo" min="40" max="240" value="90" class="w-1/2" oninput="document.getElementById('val-tempo').innerText = this.value">
+                    <span id="val-tempo" class="w-8 text-right font-mono">90</span>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <label class="font-medium text-sm">メトロノーム回数 (n回)</label>
+                    <input type="number" id="repeat-count" min="1" max="10" value="4" class="w-16 border rounded p-1 text-center font-mono" onchange="handleSettingChange()">
+                </div>
+            </div>
+
+            <!-- 出現確率設定 -->
+            <div class="space-y-3">
+                <h2 class="font-bold text-lg text-slate-700 border-l-4 border-purple-500 pl-2">出現確率 (0〜10)</h2>
+                
+                <div class="flex justify-between items-center text-sm">
+                    <label>2分音符</label>
+                    <input type="range" id="w-h" min="0" max="10" value="2" class="w-1/2 accent-purple-500" oninput="document.getElementById('val-w-h').innerText = this.value">
+                    <span id="val-w-h" class="w-4 text-right font-mono">2</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label>4分音符</label>
+                    <input type="range" id="w-q" min="0" max="10" value="6" class="w-1/2 accent-purple-500" oninput="document.getElementById('val-w-q').innerText = this.value">
+                    <span id="val-w-q" class="w-4 text-right font-mono">6</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label>8分音符</label>
+                    <input type="range" id="w-8" min="0" max="10" value="6" class="w-1/2 accent-purple-500" oninput="document.getElementById('val-w-8').innerText = this.value">
+                    <span id="val-w-8" class="w-4 text-right font-mono">6</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label>16分音符</label>
+                    <input type="range" id="w-16" min="0" max="10" value="3" class="w-1/2 accent-purple-500" oninput="document.getElementById('val-w-16').innerText = this.value">
+                    <span id="val-w-16" class="w-4 text-right font-mono">3</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label>1拍3連</label>
+                    <input type="range" id="w-t3" min="0" max="10" value="2" class="w-1/2 accent-purple-500" oninput="document.getElementById('val-w-t3').innerText = this.value">
+                    <span id="val-w-t3" class="w-4 text-right font-mono">2</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label>2拍3連</label>
+                    <input type="range" id="w-t2" min="0" max="10" value="1" class="w-1/2 accent-purple-500" oninput="document.getElementById('val-w-t2').innerText = this.value">
+                    <span id="val-w-t2" class="w-4 text-right font-mono">1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：楽譜表示とステータス -->
+        <div class="w-full md:w-2/3 flex flex-col gap-4">
+            
+            <div class="bg-white p-6 rounded-xl shadow-md flex flex-col items-center justify-center min-h-[300px]">
+                <div id="status-text" class="text-3xl font-bold text-slate-300 mb-6 h-10 transition-colors">
+                    待機中
+                </div>
+                
+                <!-- 楽譜描画コンテナ -->
+                <div id="vf-container" class="w-full flex justify-center overflow-x-auto"></div>
+            </div>
+            
+            <div class="bg-blue-50 text-blue-800 p-4 rounded-lg shadow-sm text-sm">
+                <h3 class="font-bold mb-1">使い方</h3>
+                <ul class="list-disc list-inside space-y-1">
+                    <li>「再生開始」を押すとメトロノームが鳴り、楽譜が表示されます。</li>
+                    <li>設定した回数（n回）の間、表示されたリズムを叩いたり声に出して練習します。</li>
+                    <li>その後、1回だけ正解のリズムが鳴ります。答え合わせをしましょう。</li>
+                    <li>答え合わせが終わると、新しいリズムが生成され、自動的に次のループへ進みます。</li>
+                </ul>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- 状態管理 ---
+        let isPlaying = false;
+        let audioCtx = null;
+        let timerID = null;
+        
+        let currentBar = 0; 
+        let nextBarTime = 0;
+        let currentRhythm = [];
+        
+        const VF = Vex.Flow;
+
+        // --- 設定の取得 ---
+        function getTimeSignature() {
+            return document.querySelector('input[name="timeSig"]:checked').value;
+        }
+        function getBPM() {
+            return parseInt(document.getElementById('tempo').value, 10);
+        }
+        function getRepeatCount() {
+            return parseInt(document.getElementById('repeat-count').value, 10);
+        }
+        function getWeights() {
+            return {
+                'h': parseInt(document.getElementById('w-h').value, 10),
+                'q': parseInt(document.getElementById('w-q').value, 10),
+                '8': parseInt(document.getElementById('w-8').value, 10),
+                '16': parseInt(document.getElementById('w-16').value, 10),
+                't3': parseInt(document.getElementById('w-t3').value, 10),
+                't2': parseInt(document.getElementById('w-t2').value, 10),
+            };
+        }
+
+        function handleSettingChange() {
+            if (isPlaying) {
+                stopPlay();
+            }
+            // 停止中でもプレビューとして1つ生成して描画
+            currentRhythm = generateRhythm(getTimeSignature(), getWeights());
+            drawRhythm(currentRhythm, getTimeSignature());
+        }
+
+        // --- リズム生成 ---
+        function generateRhythm(timeSig, weights) {
+            let beats = timeSig === '4/4' ? 4 : 3;
+            let notes = [];
+            
+            // 浮動小数点の誤差を考慮
+            while (beats > 0.01) {
+                let candidates = [];
+                
+                // 残り拍数に応じて候補を追加
+                if (beats >= 2 && weights.h > 0) candidates.push({id: 'h', w: weights.h});
+                if (beats >= 2 && weights.t2 > 0) candidates.push({id: 't2', w: weights.t2});
+                if (beats >= 1 && weights.q > 0) candidates.push({id: 'q', w: weights.q});
+                if (beats >= 1 && weights.t3 > 0) candidates.push({id: 't3', w: weights.t3});
+                if (beats >= 0.5 && weights.8 > 0) candidates.push({id: '8', w: weights.8});
+                if (beats >= 0.25 && weights.16 > 0) candidates.push({id: '16', w: weights.16});
+
+                // 確率が全て0の場合のフェイルセーフ
+                if (candidates.length === 0) {
+                    if (beats >= 1) candidates.push({id: 'q', w: 1});
+                    else if (beats >= 0.5) candidates.push({id: '8', w: 1});
+                    else candidates.push({id: '16', w: 1});
+                }
+
+                // 重み付き抽選
+                let totalWeight = candidates.reduce((sum, c) => sum + c.w, 0);
+                let rand = Math.random() * totalWeight;
+                let selected = candidates[0].id;
+                
+                for (let c of candidates) {
+                    rand -= c.w;
+                    if (rand <= 0) {
+                        selected = c.id;
+                        break;
+                    }
+                }
+
+                // 選ばれた音符を配列に追加
+                if (selected === 'h') { 
+                    notes.push({type: 'h', beat: 2}); 
+                    beats -= 2; 
+                } else if (selected === 'q') { 
+                    notes.push({type: 'q', beat: 1}); 
+                    beats -= 1; 
+                } else if (selected === '8') { 
+                    notes.push({type: '8', beat: 0.5}); 
+                    beats -= 0.5; 
+                } else if (selected === '16') { 
+                    notes.push({type: '16', beat: 0.25}); 
+                    beats -= 0.25; 
+                } else if (selected === 't3') {
+                    // 1拍3連は 1/3拍の音符が3つ
+                    notes.push({type: 't3', beat: 1/3, tuplet: 'start'});
+                    notes.push({type: 't3', beat: 1/3, tuplet: 'mid'});
+                    notes.push({type: 't3', beat: 1/3, tuplet: 'end'});
+                    beats -= 1;
+                } else if (selected === 't2') {
+                    // 2拍3連は 2/3拍の音符が3つ
+                    notes.push({type: 't2', beat: 2/3, tuplet: 'start'});
+                    notes.push({type: 't2', beat: 2/3, tuplet: 'mid'});
+                    notes.push({type: 't2', beat: 2/3, tuplet: 'end'});
+                    beats -= 2;
+                }
+            }
+            return notes;
+        }
+
+        // --- VexFlow 描画 ---
+        function drawRhythm(notesData, timeSig) {
+            const container = document.getElementById("vf-container");
+            container.innerHTML = ""; 
+            
+            // レンダラーのセットアップ
+            const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+            renderer.resize(600, 150);
+            const context = renderer.getContext();
+            
+            // 五線譜（今回は1本線のパーカッション譜）
+            const stave = new VF.Stave(50, 40, 500);
+            stave.setOptions({ num_lines: 1 });
+            stave.addClef("percussion").addTimeSignature(timeSig);
+            stave.setContext(context).draw();
+            
+            const vfNotes = [];
+            const tuplets = [];
+            let currentTupletNotes = [];
+            
+            for (const n of notesData) {
+                // パーカッション譜のため、音符はすべて 'b/4' (第3線/1本線上) に配置
+                let noteOpts = { clef: "percussion", keys: ["b/4"] };
+                
+                if (n.type === 'h') {
+                    noteOpts.duration = "h";
+                    vfNotes.push(new VF.StaveNote(noteOpts));
+                } else if (n.type === 'q') {
+                    noteOpts.duration = "q";
+                    vfNotes.push(new VF.StaveNote(noteOpts));
+                } else if (n.type === '8') {
+                    noteOpts.duration = "8";
+                    vfNotes.push(new VF.StaveNote(noteOpts));
+                } else if (n.type === '16') {
+                    noteOpts.duration = "16";
+                    vfNotes.push(new VF.StaveNote(noteOpts));
+                } else if (n.type === 't3') {
+                    noteOpts.duration = "8"; // 1拍3連のベースは8分音符
+                    const note = new VF.StaveNote(noteOpts);
+                    vfNotes.push(note);
+                    currentTupletNotes.push(note);
+                    if (n.tuplet === 'end') {
+                        tuplets.push(new VF.Tuplet(currentTupletNotes, {num_notes: 3, notes_occupied: 2}));
+                        currentTupletNotes = [];
+                    }
+                } else if (n.type === 't2') {
+                    noteOpts.duration = "q"; // 2拍3連のベースは4分音符
+                    const note = new VF.StaveNote(noteOpts);
+                    vfNotes.push(note);
+                    currentTupletNotes.push(note);
+                    if (n.tuplet === 'end') {
+                        tuplets.push(new VF.Tuplet(currentTupletNotes, {num_notes: 3, notes_occupied: 2}));
+                        currentTupletNotes = [];
+                    }
+                }
+            }
+            
+            // 連桁（ビーム）の生成。4分音符や2分音符は除外
+            const tickablesForBeam = vfNotes.filter(n => n.duration !== 'h' && n.duration !== 'q');
+            const beams = VF.Beam.generateBeams(tickablesForBeam);
+            
+            // 音符の配置フォーマット
+            const beats = timeSig === '4/4' ? 4 : 3;
+            const voice = new VF.Voice({num_beats: beats, beat_value: 4});
+            voice.addTickables(vfNotes);
+            
+            new VF.Formatter().joinVoices([voice]).format([voice], 400);
+            
+            // 描画
+            voice.draw(context, stave);
+            beams.forEach(b => b.setContext(context).draw());
+            tuplets.forEach(t => t.setContext(context).draw());
+        }
+
+        // --- オーディオ・スケジューリング ---
+        function togglePlay() {
+            const btn = document.getElementById('play-btn');
+            if (isPlaying) {
+                stopPlay();
+            } else {
+                startPlay();
+            }
+        }
+
+        function startPlay() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            isPlaying = true;
+            currentBar = 0;
+            // 最初のタイミング（少し先）
+            nextBarTime = audioCtx.currentTime + 0.1; 
+            
+            const btn = document.getElementById('play-btn');
+            btn.innerHTML = "■ 停止";
+            btn.classList.replace("bg-green-500", "bg-red-500");
+            btn.classList.replace("hover:bg-green-600", "hover:bg-red-600");
+
+            generateAndDraw();
+            scheduler();
+        }
+
+        function stopPlay() {
+            isPlaying = false;
+            clearTimeout(timerID);
+            
+            const btn = document.getElementById('play-btn');
+            btn.innerHTML = "▶ 再生開始";
+            btn.classList.replace("bg-red-500", "bg-green-500");
+            btn.classList.replace("hover:bg-red-600", "hover:bg-green-600");
+            
+            document.getElementById('status-text').textContent = "停止中";
+            document.getElementById('status-text').className = "text-3xl font-bold text-slate-300 mb-6 h-10 transition-colors";
+        }
+
+        function generateAndDraw() {
+            currentRhythm = generateRhythm(getTimeSignature(), getWeights());
+            drawRhythm(currentRhythm, getTimeSignature());
+        }
+
+        function scheduler() {
+            if (!isPlaying) return;
+            
+            // 先読み時間 (0.1秒) 以内に次の小節が来るならスケジュールする
+            while (nextBarTime < audioCtx.currentTime + 0.1) {
+                scheduleBar(nextBarTime);
+                const beats = getTimeSignature() === '4/4' ? 4 : 3;
+                nextBarTime += (60 / getBPM()) * beats;
+            }
+            
+            timerID = setTimeout(scheduler, 25);
+        }
+
+        function scheduleBar(time) {
+            const repeats = getRepeatCount();
+            const isAnswerBar = (currentBar === repeats);
+            const beats = getTimeSignature() === '4/4' ? 4 : 3;
+            const secPerBeat = 60 / getBPM();
+
+            // メトロノーム音のスケジュール
+            for (let i = 0; i < beats; i++) {
+                playClick(time + i * secPerBeat, i === 0);
+            }
+
+            // 正解の小節ならリズム音も鳴らす
+            if (isAnswerBar) {
+                let t = time;
+                for (let note of currentRhythm) {
+                    playNote(t, note.beat * secPerBeat);
+                    t += note.beat * secPerBeat;
+                }
+            }
+
+            // UIステータスの更新をスケジュール（実際の再生時刻に合わせる）
+            const displayBar = currentBar + 1;
+            const delayMs = (time - audioCtx.currentTime) * 1000;
+            
+            setTimeout(() => {
+                if (!isPlaying) return;
+                const statusEl = document.getElementById('status-text');
+                if (isAnswerBar) {
+                    statusEl.textContent = "正解再生中！";
+                    statusEl.className = "text-3xl font-bold text-red-500 mb-6 h-10 transition-colors scale-110";
+                } else {
+                    statusEl.textContent = `練習 ${displayBar} / ${repeats}`;
+                    statusEl.className = "text-3xl font-bold text-blue-500 mb-6 h-10 transition-colors";
+                }
+            }, delayMs);
+
+            // カウンターを進める
+            currentBar++;
+            
+            // 規定回数(n + 1)が終わったらリセットし、次の小節の直前に新しいリズムを生成
+            if (currentBar > repeats) {
+                currentBar = 0;
+                // 次の小節が始まる少し前に画面を切り替える
+                setTimeout(() => {
+                    if (isPlaying) generateAndDraw();
+                }, delayMs + (secPerBeat * beats * 1000) - 100); 
+            }
+        }
+
+        // --- 音源 (Web Audio API) ---
+        function playClick(time, isAccent) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'sine';
+            osc.frequency.value = isAccent ? 1200 : 800; // 1拍目だけ高い音
+            
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.5, time + 0.005);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+            
+            osc.start(time);
+            osc.stop(time + 0.1);
+        }
+
+        function playNote(time, durationInSeconds) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'triangle'; // 木琴のような響きを想定
+            osc.frequency.value = 440;
+            
+            // アタックとリリース
+            const attack = 0.01;
+            const release = 0.05;
+            const actualDuration = durationInSeconds * 0.9; // 音符の長さよりわずかに短く切る
+            
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.6, time + attack);
+            gain.gain.setValueAtTime(0.6, time + actualDuration - release);
+            gain.gain.linearRampToValueAtTime(0.001, time + actualDuration);
+            
+            osc.start(time);
+            osc.stop(time + actualDuration);
+        }
+
+        // 初期描画
+        window.onload = () => {
+            currentRhythm = generateRhythm(getTimeSignature(), getWeights());
+            drawRhythm(currentRhythm, getTimeSignature());
+        };
+    </script>
+</body>
+</html>
